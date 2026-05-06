@@ -85,7 +85,7 @@
     "project": "Routly",
     "team": "Greater N0ida",
     "year": "2nd Year",
-    "timestamp": "2026-05-06T12:31:26.643325",
+    "timestamp": "2026-05-06T12:50:20.066104",
     "mode": "greedy",
     "dataset": {
       "orders_file": "data/raw/orders.csv",
@@ -108,13 +108,13 @@
     "max_active_orders_per_agent": 2
   },
   "performance": {
-    "wall_clock_seconds": 0.0645,
+    "wall_clock_seconds": 0.078,
     "total_scoring_decisions": 150,
-    "avg_decision_latency_ms": 0.3449,
-    "max_decision_latency_ms": 0.9584,
+    "avg_decision_latency_ms": 0.4123,
+    "max_decision_latency_ms": 1.0784,
     "hungarian_batches": 0,
     "avg_batch_time_ms": 0.0,
-    "orders_per_wall_second": 2324.75
+    "orders_per_wall_second": 1921.85
   },
   "adaptive": {
     "total_deliveries": 150,
