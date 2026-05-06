@@ -1,4 +1,4 @@
-"""Multi-factor normalized scoring engine for agent-order assignment."""
+"""Multi-factor normalized scoring engine with delay buffer integration."""
 
 import math
 import time
@@ -7,29 +7,26 @@ from typing import Optional
 
 from .models import Agent, Order, Priority
 from .graph import EnvironmentGraph
+from .delay_buffer import DelayBuffer
 
 logger = logging.getLogger(__name__)
 
 
 class Scorer:
-    """Score agents for a given order using normalized, weighted metrics."""
+    """Score agents for a given order using normalized, weighted metrics.
+    
+    Now integrates delay buffering for traffic-aware travel estimates
+    and accepts mutable weights from the adaptive engine.
+    """
 
-    # Default weights
     DEFAULT_WEIGHTS: dict[str, float] = {
-        "sla": 0.40,
-        "travel": 0.30,
-        "fairness": 0.20,
-        "rating": 0.10,
+        "sla": 0.40, "travel": 0.30, "fairness": 0.20, "rating": 0.10,
     }
 
-    # Default priority multipliers
     DEFAULT_PRIORITY_MULTIPLIERS: dict[str, float] = {
-        "high": 1.5,
-        "normal": 1.0,
-        "low": 0.8,
+        "high": 1.5, "normal": 1.0, "low": 0.8,
     }
 
-    # Latency target (seconds) — from constraints.csv or default
     LATENCY_TARGET_S: float = 5.0
 
     def __init__(
@@ -37,44 +34,60 @@ class Scorer:
         graph: EnvironmentGraph,
         weights: Optional[dict[str, float]] = None,
         priority_multipliers: Optional[dict[str, float]] = None,
+        delay_buffer: Optional[DelayBuffer] = None,
     ) -> None:
         self.graph: EnvironmentGraph = graph
-        self.w: dict[str, float] = weights or self.DEFAULT_WEIGHTS
+        self.w: dict[str, float] = weights or self.DEFAULT_WEIGHTS.copy()
         self.priority_multipliers: dict[str, float] = (
-            priority_multipliers or self.DEFAULT_PRIORITY_MULTIPLIERS
+            priority_multipliers or self.DEFAULT_PRIORITY_MULTIPLIERS.copy()
         )
+        self.delay_buffer: Optional[DelayBuffer] = delay_buffer
+
         # Latency tracking
         self.total_decisions: int = 0
         self.total_decision_time_ms: float = 0.0
         self.max_decision_time_ms: float = 0.0
 
-    def score(self, agent: Agent, order: Order, all_agents: list[Agent]) -> float:
-        """
-        Compute a composite score for assigning `order` to `agent`.
-        Returns negative infinity if the agent cannot reach the order.
-        """
-        travel_time: float = self.graph.get_distance(agent.current_location, order.location)
+    def update_weights(self, new_weights: dict[str, float]) -> None:
+        """Hot-swap weights from adaptive engine."""
+        self.w = new_weights
 
-        # Unreachable — disqualify
+    def _get_travel_time(self, from_loc: tuple[int, int], to_loc: tuple[int, int]) -> float:
+        """Get travel time — buffered if delay_buffer is set, raw otherwise."""
+        if self.delay_buffer:
+            return self.delay_buffer.get_buffered_travel_time(from_loc, to_loc)
+        return self.graph.get_distance(from_loc, to_loc)
+
+    def score(self, agent: Agent, order: Order, all_agents: list[Agent]) -> float:
+        """Compute composite score for assigning order to agent."""
+        travel_time: float = self._get_travel_time(agent.current_location, order.location)
+
         if travel_time == float("inf"):
             return float("-inf")
 
         est_delivery_time: float = order.prep_time + travel_time
 
-        # --- 1. Travel Score: fast deliveries → score close to 1.0 ---
+        # 1. Travel Score
         travel_score: float = max(0.0, 1.0 - (est_delivery_time / 60.0))
 
-        # --- 2. SLA Score (exponential penalty for violations) ---
+        # 2. SLA Score with exponential penalty
         sla_margin: float = order.sla_minutes - est_delivery_time
         if sla_margin >= 10.0:
             sla_score: float = 1.0
         elif sla_margin >= 0.0:
             sla_score = 0.5 + (sla_margin / 20.0)
         else:
-            # Harsh exponential penalty — drives score deep negative
             sla_score = max(-2.0, 0.5 * math.exp(sla_margin / 5.0))
 
-        # --- 3. Fairness Score: prefer agents with fewer assignments ---
+        # Inflate SLA risk for routes through high-delay edges
+        if self.delay_buffer:
+            risk: float = self.delay_buffer.get_risk_factor(
+                agent.current_location, order.location
+            )
+            if risk > 0.5:
+                sla_score *= (1.0 - 0.15 * risk)
+
+        # 3. Fairness Score
         max_assignments: int = max(
             (a.cumulative_assignments for a in all_agents), default=1
         )
@@ -82,10 +95,10 @@ class Scorer:
             max_assignments = 1
         fairness_score: float = 1.0 - (agent.cumulative_assignments / max_assignments)
 
-        # --- 4. Rating Score: 4.0–5.0 → 0.0–1.0 ---
+        # 4. Rating Score
         rating_score: float = agent.rating - 4.0
 
-        # --- 5. Weighted combination ---
+        # 5. Weighted combination
         base_score: float = (
             self.w["sla"] * sla_score
             + self.w["travel"] * travel_score
@@ -93,15 +106,14 @@ class Scorer:
             + self.w["rating"] * rating_score
         )
 
-        # --- 6. Priority multiplier (from constraints.csv) ---
+        # 6. Priority multiplier
         multiplier: float = self.priority_multipliers.get(order.priority.value, 1.0)
         return base_score * multiplier
 
     def score_all_candidates(
         self, order: Order, available_agents: list[Agent], all_agents: list[Agent]
     ) -> list[tuple[float, tuple[float, str], Agent]]:
-        """Score all available agents for an order, with latency tracking.
-        Returns sorted list of (score, tiebreak_key, agent), best first."""
+        """Score all available agents for an order (greedy mode). With latency tracking."""
         start: float = time.perf_counter()
 
         scored: list[tuple[float, tuple[float, str], Agent]] = []
@@ -111,7 +123,6 @@ class Scorer:
                 continue
             scored.append((s, self.tiebreak_key(agent), agent))
 
-        # Sort: highest score first, then tiebreak
         scored.sort(key=lambda x: (-x[0], x[1]))
 
         elapsed_ms: float = (time.perf_counter() - start) * 1000.0
@@ -120,11 +131,10 @@ class Scorer:
         if elapsed_ms > self.max_decision_time_ms:
             self.max_decision_time_ms = elapsed_ms
 
-        # Log warning if latency exceeds target
         if elapsed_ms > self.LATENCY_TARGET_S * 1000:
             logger.warning(
-                "Decision latency %.1fms exceeds target %.0fms for order %s",
-                elapsed_ms, self.LATENCY_TARGET_S * 1000, order.order_id,
+                "Decision latency %.1fms exceeds target for order %s",
+                elapsed_ms, order.order_id,
             )
 
         return scored
@@ -137,8 +147,4 @@ class Scorer:
 
     @staticmethod
     def tiebreak_key(agent: Agent) -> tuple[float, str]:
-        """
-        Tiebreaker: higher rating first, then lower alphabetical agent_id.
-        Used as sort key — negate rating for descending order.
-        """
         return (-agent.rating, agent.agent_id)
