@@ -1,6 +1,6 @@
 """Dynamic Delay Buffering — traffic risk awareness for travel time estimates."""
 
-from .graph import EnvironmentGraph
+from src.utils.graph import EnvironmentGraph
 
 
 class DelayBuffer:

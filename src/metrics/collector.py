@@ -4,7 +4,7 @@ import math
 import statistics
 from typing import Any
 
-from .models import Order
+from src.models.datatypes import Order
 
 
 class WelfordStats:

@@ -1,7 +1,7 @@
 import logging
-from src.models import Agent, Order, Priority
-from src.scorer import Scorer
-from src.graph import EnvironmentGraph
+from src.models.datatypes import Agent, Order, Priority
+from src.core.scorer import Scorer
+from src.utils.graph import EnvironmentGraph
 
 logging.basicConfig(level=logging.DEBUG)
 

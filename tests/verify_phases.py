@@ -10,7 +10,7 @@ import math
 # Force UTF-8 output on Windows
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data", "raw")
 
 PASS = "[PASS]"
@@ -53,7 +53,7 @@ for fname in ["agents.csv", "orders.csv", "environment_edges.csv", "constraints.
               f"Header: {header}")
 
 # 1b. Verify models
-from src.models import Order, Agent, Priority, OrderState
+from src.models.datatypes import Order, Agent, Priority, OrderState
 
 agent = Agent(agent_id="TEST", current_location=(0, 0), rating=4.5)
 check("Agent.is_available is @property (dynamic)", agent.is_available is True)
@@ -72,7 +72,7 @@ check("Priority enum maps 'normal'", Priority("normal") == Priority.NORMAL)
 check("Priority enum maps 'low'", Priority("low") == Priority.LOW)
 
 # 1c. Verify Graph — Floyd-Warshall with delay_multiplier
-from src.graph import EnvironmentGraph
+from src.utils.graph import EnvironmentGraph
 
 graph = EnvironmentGraph()
 graph.load(os.path.join(DATA_DIR, "environment_edges.csv"))
@@ -125,8 +125,8 @@ check("All 100 nodes reachable from (0,0) (connected graph)", all_reachable)
 
 banner("PHASE 2: State Management — Queue & Registry")
 
-from src.queue import OrderQueue
-from src.registry import AgentRegistry
+from src.state.queue import OrderQueue
+from src.state.registry import AgentRegistry
 
 # 2a. Priority Queue
 q = OrderQueue()
@@ -196,7 +196,7 @@ check("A001 back in available after order removal", len(reg.get_available()) == 
 
 banner("PHASE 3: Scoring Algorithm — Normalization & Weights")
 
-from src.scorer import Scorer
+from src.core.scorer import Scorer
 
 scorer = Scorer(graph)
 
@@ -263,8 +263,8 @@ check("Tiebreak: equal rating → lower ID wins", tb1 < tb2)
 
 banner("PHASE 4: Event-Driven Simulation — Engine Verification")
 
-from src.engine import SimulationEngine, EventType, Event
-from src.metrics import MetricsCollector
+from src.core.engine import SimulationEngine, EventType, Event
+from src.metrics.collector import MetricsCollector
 
 # Run a mini simulation with 3 orders and 2 agents
 mini_queue = OrderQueue()
@@ -314,7 +314,7 @@ check("Mini sim: metrics recorded 3 deliveries", mini_metrics.delivery_stats["al
 
 banner("PHASE 5: Metrics — Welford's Algorithm Verification")
 
-from src.metrics import WelfordStats
+from src.metrics.collector import WelfordStats
 
 # Verify Welford's against known values
 w = WelfordStats()

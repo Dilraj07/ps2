@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import json, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from main import run_simulation
+from src.interfaces.cli import run_simulation
 
 st.set_page_config(page_title="Routly Dashboard", layout="wide")
 
@@ -185,7 +185,7 @@ if run_comparison and "comparison" in st.session_state:
         st.metric(f"Fairness (Other)", f"{cs['fairness_std_dev']:.2f}")
 
 # ── Pareto Frontier ──
-pareto_path = os.path.join(os.path.dirname(__file__), "output", "pareto_results.json")
+pareto_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "results", "pareto_results.json")
 if os.path.exists(pareto_path):
     st.markdown("---")
     st.subheader("Pareto Frontier (Weight Optimization)")

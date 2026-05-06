@@ -1,6 +1,6 @@
 """Agent registry with O(1) availability tracking."""
 
-from .models import Agent
+from src.models.datatypes import Agent
 
 
 class AgentRegistry:

@@ -3,7 +3,7 @@
 from collections import deque
 from typing import Optional
 
-from .models import Order, Priority, OrderState
+from src.models.datatypes import Order, Priority, OrderState
 
 
 class OrderQueue:

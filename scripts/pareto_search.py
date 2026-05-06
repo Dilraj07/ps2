@@ -18,7 +18,7 @@ import logging
 
 logging.basicConfig(level=logging.WARNING)
 
-from main import run_simulation
+from src.interfaces.cli import run_simulation
 
 logger = logging.getLogger("pareto")
 logger.setLevel(logging.INFO)
@@ -139,8 +139,8 @@ def main() -> None:
     result = run_pareto_search(n_configs=args.configs, mode=args.mode)
 
     # Save
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(base_dir, "output", "pareto_results.json")
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    output_path = os.path.join(base_dir, "data", "results", "pareto_results.json")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     with open(output_path, "w", encoding="utf-8") as f:
