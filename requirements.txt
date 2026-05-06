@@ -1,0 +1,6 @@
+scipy
+fastapi
+uvicorn[standard]
+streamlit
+plotly
+numpy

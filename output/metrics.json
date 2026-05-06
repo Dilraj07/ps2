@@ -1,0 +1,118 @@
+{
+  "summary": {
+    "total_orders": 150,
+    "average_delivery_time": 15.684,
+    "delivery_time_std_dev": 4.6371,
+    "sla_violation_rate_percent": 0.0,
+    "sla_compliance_rate_percent": 100.0,
+    "sla_violations": 0,
+    "average_sla_margin": 35.8227,
+    "fairness_std_dev": 0.8165,
+    "fairness_min_assignments": 4,
+    "fairness_max_assignments": 7,
+    "fairness_assignment_range": 3,
+    "agent_assignment_counts": [
+      7,
+      6,
+      7,
+      5,
+      7,
+      6,
+      6,
+      7,
+      6,
+      6,
+      6,
+      6,
+      5,
+      6,
+      7,
+      5,
+      5,
+      6,
+      4,
+      7,
+      6,
+      5,
+      7,
+      6,
+      6
+    ],
+    "throughput_orders_per_sim_minute": 0.297
+  },
+  "breakdown_by_priority": {
+    "high": {
+      "delivery_stats": {
+        "count": 51,
+        "mean": 14.6216,
+        "variance": 13.8729,
+        "std_dev": 3.7246
+      },
+      "sla_total": 51,
+      "sla_violations": 0,
+      "sla_violation_rate_percent": 0.0,
+      "sla_compliance_rate_percent": 100.0,
+      "average_sla_margin": 28.202
+    },
+    "normal": {
+      "delivery_stats": {
+        "count": 50,
+        "mean": 17.852,
+        "variance": 28.1866,
+        "std_dev": 5.3091
+      },
+      "sla_total": 50,
+      "sla_violations": 0,
+      "sla_violation_rate_percent": 0.0,
+      "sla_compliance_rate_percent": 100.0,
+      "average_sla_margin": 34.188
+    },
+    "low": {
+      "delivery_stats": {
+        "count": 49,
+        "mean": 14.5776,
+        "variance": 16.1789,
+        "std_dev": 4.0223
+      },
+      "sla_total": 49,
+      "sla_violations": 0,
+      "sla_violation_rate_percent": 0.0,
+      "sla_compliance_rate_percent": 100.0,
+      "average_sla_margin": 45.4224
+    }
+  },
+  "metadata": {
+    "project": "Routly",
+    "team": "Greater N0ida",
+    "year": "2nd Year",
+    "timestamp": "2026-05-06T12:15:56.285706",
+    "dataset": {
+      "orders_file": "data/raw/orders.csv",
+      "agents_file": "data/raw/agents.csv",
+      "environment_file": "data/raw/environment_edges.csv",
+      "constraints_file": "data/raw/constraints.csv"
+    },
+    "total_agents": 25,
+    "total_orders": 150,
+    "scoring_weights": {
+      "sla": 0.4,
+      "travel": 0.3,
+      "fairness": 0.2,
+      "rating": 0.1
+    },
+    "priority_multipliers": {
+      "high": 1.5,
+      "normal": 1.0,
+      "low": 0.8
+    },
+    "max_active_orders_per_agent": 2
+  },
+  "performance": {
+    "wall_clock_simulation_seconds": 0.0571,
+    "total_scoring_decisions": 150,
+    "avg_decision_latency_ms": 0.3051,
+    "max_decision_latency_ms": 0.7221,
+    "decision_latency_target_ms": 5000.0,
+    "orders_per_wall_second": 2626.68
+  }
+}
